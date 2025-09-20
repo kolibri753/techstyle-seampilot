@@ -1,0 +1,435 @@
+===== ./vite.config.ts =====
+import { defineConfig } from 'vite'
+import tsconfigPaths from 'vite-tsconfig-paths'
+import react from '@vitejs/plugin-react-swc'
+import path from 'path'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react(), tsconfigPaths()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+})
+
+===== ./eslint.config.js =====
+import js from "@eslint/js";
+import globals from "globals";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import tseslint from "typescript-eslint";
+import { defineConfig, globalIgnores } from "eslint/config";
+import importPlugin from "eslint-plugin-import";
+import promisePlugin from "eslint-plugin-promise";
+import unused from "eslint-plugin-unused-imports";
+
+export default defineConfig([
+	globalIgnores(["dist"]),
+	{
+		files: ["**/*.{ts,tsx}"],
+		languageOptions: {
+			ecmaVersion: 2022,
+			globals: globals.browser,
+		},
+		plugins: {
+			import: importPlugin,
+			promise: promisePlugin,
+			"unused-imports": unused,
+		},
+		settings: { "import/resolver": { node: { extensions: [".ts", ".tsx"] } } },
+		extends: [
+			js.configs.recommended,
+			...tseslint.configs.recommended,
+			reactHooks.configs["recommended-latest"],
+			reactRefresh.configs.vite,
+		],
+		rules: {
+			// keep it practical
+			"unused-imports/no-unused-imports": "error",
+			"unused-imports/no-unused-vars": [
+				"error",
+				{ args: "after-used", argsIgnorePattern: "^_" },
+			],
+			"import/order": [
+				"warn",
+				{
+					groups: [
+						["builtin", "external", "internal"],
+						["parent", "sibling", "index"],
+					],
+					"newlines-between": "always",
+				},
+			],
+			"promise/catch-or-return": "warn",
+			"promise/no-return-wrap": "warn",
+			"no-console": ["warn", { allow: ["error", "warn"] }],
+		},
+	},
+]);
+
+===== ./firebase.json =====
+{
+	"hosting": {
+		"public": "dist",
+		"ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+		"rewrites": [
+			{
+				"source": "**",
+				"destination": "/index.html"
+			}
+		]
+	}
+}
+
+===== ./env.d.ts =====
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_FIREBASE_API_KEY: string;
+  readonly VITE_FIREBASE_AUTH_DOMAIN: string;
+  readonly VITE_FIREBASE_PROJECT_ID: string;
+  readonly VITE_FIREBASE_STORAGE_BUCKET: string;
+  readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
+  readonly VITE_FIREBASE_APP_ID: string;
+  readonly VITE_FIREBASE_MEASUREMENT_ID?: string;
+}
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+===== ./src/hooks/useAuth.ts =====
+import { useEffect, useState } from 'react'
+import type { User } from 'firebase/auth'
+import { listenAuth } from '@/lib/firebase'
+
+type AuthState = { user: User | null; loading: boolean }
+
+export function useAuth(): AuthState {
+  const [state, setState] = useState<AuthState>({ user: null, loading: true })
+
+  useEffect(() => {
+    return listenAuth((u) => setState({ user: u, loading: false }))
+  }, [])
+
+  return state
+}
+
+===== ./src/App.tsx =====
+import { useState, type ChangeEvent } from 'react'
+import { db, storage } from './lib/firebase'
+import { useAuth } from './hooks/useAuth'
+import { AuthButtons } from './components/AuthButtons'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+
+function App() {
+  const { user, loading } = useAuth()
+  const [status, setStatus] = useState('')
+
+  const writePing = async () => {
+    if (!user) return setStatus('Sign in first')
+    await setDoc(doc(db, 'test', user.uid), { ping: 'ok', at: serverTimestamp() })
+    setStatus('Firestore write: OK')
+  }
+
+  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return setStatus('Need file + signed-in user')
+    const path = `uploads/${user.uid}/${Date.now()}-${file.name}`
+    const r = ref(storage, path)
+    await uploadBytes(r, file)
+    const url = await getDownloadURL(r)
+    setStatus(`Storage upload: OK → ${url}`)
+  }
+
+  if (loading) return <div className="p-6">Loading…</div>
+
+  return (
+    <div className="p-6 font-sans">
+      <h1 className="text-2xl mb-4">Auth ready ✅</h1>
+
+      <AuthButtons user={user} setStatus={setStatus} />
+
+      <div className="flex gap-3 mb-4">
+        <button onClick={writePing} disabled={!user}>
+          Write Firestore “ping”
+        </button>
+        <label className={user ? '' : 'opacity-50 pointer-events-none'}>
+          Upload photo to Storage{' '}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={onFile}
+            disabled={!user}
+          />
+        </label>
+      </div>
+
+      <p>{status}</p>
+      <p className="opacity-60">Tip: Firebase Console → Auth/Firestore/Storage to verify.</p>
+    </div>
+  )
+}
+export default App
+
+===== ./src/components/AuthButtons.tsx =====
+import type { FC } from 'react'
+import {
+  signInAnon,
+  signInWithGoogle,
+  upgradeAnonymousWithGoogle,
+  signOutUser,
+} from '@/lib/firebase'
+import type { User } from 'firebase/auth'
+
+type Props = { user: User | null; setStatus: (s: string) => void }
+
+export const AuthButtons: FC<Props> = ({ user, setStatus }) => {
+  const wrap = (fn: () => Promise<unknown>) => async () => {
+    try {
+      setStatus('')
+      await fn()
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  if (!user) {
+    return (
+      <div className="flex gap-2 items-center mb-3">
+        <button onClick={wrap(signInAnon)}>Sign in (Anonymous)</button>
+        <button onClick={wrap(signInWithGoogle)}>Sign in with Google</button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex gap-2 items-center mb-3">
+      <span>
+        Signed in as <b>{user.email ?? user.uid}</b>
+        {user.isAnonymous && <em className="ml-2 opacity-70">(anonymous)</em>}
+      </span>
+      {user.isAnonymous && (
+        <button onClick={wrap(upgradeAnonymousWithGoogle)}>Upgrade (link Google)</button>
+      )}
+      <button onClick={wrap(signOutUser)}>Sign out</button>
+    </div>
+  )
+}
+
+===== ./src/lib/env.ts =====
+function requireEnv(name: string): string {
+  const v = import.meta.env[name as keyof ImportMetaEnv] as unknown as string | undefined
+  if (!v) throw new Error(`Missing ${name}`)
+  return v
+}
+
+export const env = {
+  API_KEY: requireEnv('VITE_FIREBASE_API_KEY'),
+  AUTH_DOMAIN: requireEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  PROJECT_ID: requireEnv('VITE_FIREBASE_PROJECT_ID'),
+  STORAGE_BUCKET: requireEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  MSG_SENDER_ID: requireEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  APP_ID: requireEnv('VITE_FIREBASE_APP_ID'),
+  MEASUREMENT_ID: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+}
+
+===== ./src/lib/firebase.ts =====
+import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app'
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInAnonymously,
+  signInWithPopup,
+  linkWithPopup,
+  onAuthStateChanged,
+  signOut,
+  browserLocalPersistence,
+  type User,
+} from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
+import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics'
+import { env } from './env'
+
+const config = {
+  apiKey: env.API_KEY,
+  authDomain: env.AUTH_DOMAIN,
+  projectId: env.PROJECT_ID,
+  storageBucket: env.STORAGE_BUCKET,
+  messagingSenderId: env.MSG_SENDER_ID,
+  appId: env.APP_ID,
+  measurementId: env.MEASUREMENT_ID,
+}
+
+const app: FirebaseApp = getApps().length ? getApp() : initializeApp(config)
+
+export const auth = getAuth(app)
+auth.setPersistence(browserLocalPersistence)
+
+export const db = getFirestore(app)
+export const storage = getStorage(app)
+
+export let analytics: Analytics | undefined
+if (typeof window !== 'undefined' && import.meta.env.MODE === 'production') {
+  isSupported().then((ok) => {
+    if (ok) analytics = getAnalytics(app)
+  })
+}
+
+const provider = new GoogleAuthProvider()
+provider.setCustomParameters({ prompt: 'select_account' })
+
+export const listenAuth = (cb: (u: User | null) => void) => onAuthStateChanged(auth, cb)
+export const signInAnon = () => signInAnonymously(auth)
+export const signInWithGoogle = () => signInWithPopup(auth, provider)
+
+export const upgradeAnonymousWithGoogle = async () => {
+  const u = auth.currentUser
+  if (u?.isAnonymous) {
+    try {
+      await linkWithPopup(u, provider)
+    } catch (e: unknown) {
+      await signInWithPopup(auth, provider)
+    }
+  } else {
+    await signInWithPopup(auth, provider)
+  }
+}
+
+export const signOutUser = () => signOut(auth)
+
+===== ./src/main.tsx =====
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+===== ./src/vite-env.d.ts =====
+/// <reference types="vite/client" />
+
+===== ./tsconfig.node.json =====
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+
+===== ./tsconfig.app.json =====
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+
+    /* Path mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}
+
+===== ./package.json =====
+{
+  "name": "4fit",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "firebase": "^12.3.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react-swc": "^4.0.1",
+    "eslint": "^9.35.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "eslint-plugin-unused-imports": "^4.2.0",
+    "firebase-tools": "^14.17.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.43.0",
+    "vite": "^7.1.6"
+  }
+}
+
+===== ./tsconfig.json =====
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+
