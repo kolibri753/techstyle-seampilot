@@ -3,6 +3,7 @@ import { Login } from '@/routes/Login'
 import { RoleLanding } from '@/routes/RoleLanding'
 import { CommentatorHome } from '@/routes/CommentatorHome'
 import { EditorHome } from '@/routes/EditorHome'
+import { SampleBoard } from '@/routes/SampleBoard'
 import { AccessDenied } from '@/routes/AccessDenied'
 import { NotFound } from '@/routes/NotFound'
 
@@ -15,6 +16,7 @@ export function Main() {
 
         <Route path="/w/:wsId" element={<CommentatorHome />} />
         <Route path="/w/:wsId/editor" element={<EditorHome />} />
+        <Route path="/w/:wsId/s/:sid" element={<SampleBoard />} />
 
         <Route path="/denied" element={<AccessDenied />} />
         <Route path="/404" element={<NotFound />} />
