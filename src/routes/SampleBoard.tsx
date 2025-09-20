@@ -24,6 +24,9 @@ import { EmptyState } from '@/features/board/components/EmptyState'
 import { blockLabel } from '@/features/blocks/utils/labels'
 import { Sortable } from '@/features/dnd/Sortable'
 import { between } from '@/features/blocks/utils/order'
+import type { Block } from '@/features/blocks/types'
+import { ExportButton } from '@/features/export/ExportButton'
+import { PrintableBlocks } from '@/features/export/PrintableBlocks'
 
 // alias name matches file export
 const BoardShell = BlockShell
@@ -89,6 +92,11 @@ export function SampleBoard() {
     }
   }
 
+  // ordered block data for printing (matches on-screen order)
+  const orderedBlocks: Block[] = presentIds
+    .map((id) => blocks.find((b) => b.id === id)?.data)
+    .filter(Boolean) as Block[]
+
   return (
     <section className="space-y-6">
       <BoardHeader
@@ -97,7 +105,12 @@ export function SampleBoard() {
         status={sample.status}
         version={sample.version}
         updated={updated}
-        right={canEdit && sid ? <AddBlockBar wsId={wsId} sid={sid} /> : null}
+        right={
+          <div className="flex items-center gap-2">
+            <ExportButton />
+            {canEdit && sid ? <AddBlockBar wsId={wsId} sid={sid} /> : null}
+          </div>
+        }
       />
 
       <BoardShell
@@ -169,6 +182,8 @@ export function SampleBoard() {
           </DndContext>
         )}
       </BoardShell>
+
+      <PrintableBlocks sample={sample} blocks={orderedBlocks} />
     </section>
   )
 }
