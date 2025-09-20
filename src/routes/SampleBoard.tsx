@@ -39,6 +39,12 @@ export function SampleBoard() {
   const [ids, setIds] = useState<string[]>([])
   useEffect(() => setIds(blocks.map((b) => b.id)), [blocks])
 
+  // ensure we only render ids that still exist in blocks (prevents undefined .data crash)
+  const presentIds = useMemo(
+    () => ids.filter((id) => blocks.some((b) => b.id === id)),
+    [ids, blocks],
+  )
+
   // transient highlight
   const [focusId, setFocusId] = useState<string | null>(null)
   const jumpToBlock = (bid: string) => {
@@ -116,20 +122,29 @@ export function SampleBoard() {
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragOver={({ active, over }) => {
-              if (!canEdit || !over || active.id === over.id) return
-              setIds((prev) =>
-                arrayMove(prev, prev.indexOf(String(active.id)), prev.indexOf(String(over.id))),
-              )
+              if (!canEdit || !over) return
+              const a = String(active.id)
+              const o = String(over.id)
+              setIds((prev) => {
+                if (a === o || !prev.includes(a) || !prev.includes(o)) return prev
+                return arrayMove(prev, prev.indexOf(a), prev.indexOf(o))
+              })
             }}
             onDragEnd={async ({ active, over }) => {
-              if (!canEdit || !over || active.id === over.id) return
-              await commitNewOrder(String(active.id))
+              if (!canEdit || !over) return
+              const a = String(active.id)
+              const o = String(over.id)
+              if (a === o) return
+              if (!ids.includes(a) || !ids.includes(o)) return
+              await commitNewOrder(a)
             }}
           >
-            <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <SortableContext items={presentIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-3">
-                {ids.map((id) => {
-                  const data = blocks.find((b) => b.id === id)!.data
+                {presentIds.map((id) => {
+                  const rec = blocks.find((b) => b.id === id)
+                  if (!rec) return null
+                  const data = rec.data
                   return (
                     <Sortable key={id} id={id} disabled={!canEdit}>
                       {({ setNodeRef, attributes, listeners, style }) => (

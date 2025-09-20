@@ -1,4 +1,12 @@
-import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, writeBatch } from 'firebase/firestore'
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  serverTimestamp,
+  writeBatch,
+} from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 export type CreateSampleInput = {
@@ -32,7 +40,7 @@ async function deleteCollection(path: string) {
 }
 
 export async function deleteSample(wsId: string, sid: string): Promise<void> {
-  await deleteCollection(`workspaces/${wsId}/samples/${sid}/steps`)
+  await deleteCollection(`workspaces/${wsId}/samples/${sid}/blocks`)
   await deleteCollection(`workspaces/${wsId}/samples/${sid}/comments`)
   await deleteDoc(doc(db, `workspaces/${wsId}/samples/${sid}`))
 }

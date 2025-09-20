@@ -8,6 +8,7 @@ import {
   query,
   serverTimestamp,
   updateDoc,
+  where,
   writeBatch,
 } from 'firebase/firestore'
 import { db, storage } from '@/lib/firebase'
@@ -46,7 +47,18 @@ export async function updateBlock(
 }
 
 export async function deleteBlock(wsId: string, sid: string, bid: string) {
-  await deleteDoc(doc(db, `workspaces/${wsId}/samples/${sid}/blocks/${bid}`))
+  // gather comments tied to this block
+  const commentsQ = query(
+    collection(db, `workspaces/${wsId}/samples/${sid}/comments`),
+    where('blockId', '==', bid),
+  )
+  const commentsSnap = await getDocs(commentsQ)
+
+  // delete block + related comments atomically
+  const batch = writeBatch(db)
+  batch.delete(doc(db, `workspaces/${wsId}/samples/${sid}/blocks/${bid}`))
+  commentsSnap.forEach((d) => batch.delete(d.ref))
+  await batch.commit()
 }
 
 export async function reorderBlocks(wsId: string, sid: string) {
