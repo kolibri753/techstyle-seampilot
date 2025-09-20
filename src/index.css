@@ -1,68 +1,195 @@
+@import "tailwindcss";
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  /* Modern font stack optimized for fitness/health apps */
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
   font-weight: 400;
 
+  /* Fitness app color scheme - energetic but professional */
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  
+  /* Light mode colors */
+  --color-primary: #2563eb;      /* Blue for primary actions */
+  --color-primary-hover: #1d4ed8;
+  --color-success: #059669;      /* Green for achievements */
+  --color-warning: #d97706;      /* Orange for alerts */
+  --color-danger: #dc2626;       /* Red for limits/warnings */
+  
+  --color-text: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-background: #ffffff;
+  --color-surface: #f9fafb;
+  --color-border: #e5e7eb;
 
+  /* Typography improvements */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* Dark mode colors */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-hover: #2563eb;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    
+    --color-text: #f9fafb;
+    --color-text-secondary: #9ca3af;
+    --color-background: #111827;
+    --color-surface: #1f2937;
+    --color-border: #374151;
+  }
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  color: var(--color-text);
+  background-color: var(--color-background);
   min-width: 320px;
   min-height: 100vh;
+  
+  /* Better mobile experience */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Enhanced link styles for fitness app */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
 }
 
+a:hover {
+  color: var(--color-primary-hover);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Modern button styles suitable for fitness tracking */
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  line-height: 1.25;
+  
+  color: var(--color-text);
+  background-color: var(--color-surface);
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  
+  transition: all 0.2s ease;
+  
+  /* Better mobile touch targets */
+  min-height: 2.5rem;
+  touch-action: manipulation;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button:hover:not(:disabled) {
+  background-color: var(--color-border);
+  border-color: var(--color-primary);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary button variant for main actions */
+button[data-variant="primary"] {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+button[data-variant="primary"]:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+/* Success button for achievements/completed workouts */
+button[data-variant="success"] {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+/* Input styles for fitness data entry */
+input, textarea, select {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+}
+
+/* Custom scrollbar for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Utility classes for fitness app specific needs */
+.metric-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.success-text {
+  color: var(--color-success);
+}
+
+.warning-text {
+  color: var(--color-warning);
+}
+
+.danger-text {
+  color: var(--color-danger);
 }
