@@ -43,13 +43,12 @@ export function PrintableSampleDoc({ sample, blocks }: Props) {
 
               {b.kind === 'text' && (
                 <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                  {b.text || <em style={{ color: '#64748b' }}>Empty text</em>}
+                  {b.text || <em>Empty text</em>}
                 </div>
               )}
 
               {b.kind === 'image' && (
                 <figure style={{ margin: 0 }}>
-                  {/* Make images page-width friendly and keep aspect */}
                   <img
                     src={b.url}
                     alt={b.caption ?? ''}

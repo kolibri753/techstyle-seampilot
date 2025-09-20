@@ -74,11 +74,11 @@ export function CommentsPanel({ wsId, sid, blocks = [], onJumpToBlock }: Props) 
           const label = data.blockId ? labelById.get(data.blockId) : undefined
           return (
             <li key={id} className="rounded-lg border border-app bg-surface p-3">
-              <div className="text-xs text-slate-700 mb-1 flex items-center gap-2">
+              <div className="text-xs mb-1 flex items-center gap-2">
                 <span>{data.displayName || data.createdBy}</span>
                 {data.blockId ? (
                   <span className="inline-flex items-center gap-1 text-[10px] leading-none">
-                    <em className="text-slate-500">on</em>
+                    <em className="text-app">on</em>
                     <a
                       role="button"
                       tabIndex={0}
@@ -90,16 +90,16 @@ export function CommentsPanel({ wsId, sid, blocks = [], onJumpToBlock }: Props) 
                         }
                       }}
                       title="Scroll to block"
-                      className="underline text-slate-700 hover:text-slate-900 cursor-pointer"
+                      className="underline cursor-pointer"
                     >
                       {label ?? 'Block'}
                     </a>
                   </span>
                 ) : (
-                  <span className="italic text-slate-500 text-[10px] leading-none">general</span>
+                  <span className="itali text-[10px] leading-none">general</span>
                 )}
               </div>
-              <div className="text-sm text-slate-900 whitespace-pre-wrap">{data.text}</div>
+              <div className="text-sm whitespace-pre-wrap">{data.text}</div>
             </li>
           )
         })}

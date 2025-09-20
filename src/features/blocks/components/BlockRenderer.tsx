@@ -3,8 +3,8 @@ import type { Block } from '@/features/blocks/types'
 export function BlockRenderer({ block }: { block: Block }) {
   if (block.kind === 'text') {
     return (
-      <div className="whitespace-pre-wrap break-words leading-7 text-[15px] text-slate-800 dark:text-slate-100">
-        {block.text || <span className="italic text-slate-500">Empty text</span>}
+      <div className="whitespace-pre-wrap break-words leading-7 text-[15px]">
+        {block.text || <span className="italic">Empty text</span>}
       </div>
     )
   }

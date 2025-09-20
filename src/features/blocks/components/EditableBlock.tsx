@@ -73,7 +73,7 @@ export function EditableBlock({
     >
       {/* EDITING TOOLBAR */}
       {canEdit && editing && (
-        <div className="absolute inset-x-0 top-0 z-10 flex justify-end gap-2 rounded-t-xl border-b bg-white/85 px-2 py-2 backdrop-blur-sm">
+        <div className="absolute inset-x-0 top-0 z-10 flex justify-end gap-2 rounded-t-xl px-2 py-2 backdrop-blur-sm">
           <button
             className="px-3 py-1.5 rounded-md bg-emerald-600 text-white shadow-sm hover:bg-emerald-500"
             onClick={save}
@@ -121,7 +121,7 @@ export function EditableBlock({
 
       {/* VIEW */}
       {!editing && (
-        <div className="text-slate-800 [&_*]:text-slate-800 [&_a]:text-slate-900">
+        <div className="text-app">
           <BlockRenderer block={block} />
         </div>
       )}
