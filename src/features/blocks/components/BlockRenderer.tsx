@@ -13,7 +13,7 @@ export function BlockRenderer({ block }: { block: Block }) {
     return (
       <figure className="space-y-2">
         <img
-          src={(block as any).url}
+          src={block.url}
           alt={block.caption ?? ''}
           className="rounded-md border border-app bg-surface max-h-[480px] w-full object-contain"
         />
@@ -23,11 +23,10 @@ export function BlockRenderer({ block }: { block: Block }) {
   }
 
   if (block.kind === 'audio') {
-    const url = (block as any).url
     return (
       <div className="space-y-2">
-        {url ? (
-          <audio controls src={url} className="w-full" />
+        {block.url ? (
+          <audio controls src={block.url} className="w-full" />
         ) : (
           <div className="text-slate-500 dark:text-slate-400">No audio uploaded</div>
         )}
