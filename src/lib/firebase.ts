@@ -9,12 +9,11 @@ import {
   signOut,
   browserLocalPersistence,
   type User,
-  signInWithEmailAndPassword, // NEW
-  sendPasswordResetEmail, // NEW
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
-import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics'
 import { env } from './env'
 
 const config = {
@@ -34,13 +33,6 @@ auth.setPersistence(browserLocalPersistence)
 
 export const db = getFirestore(app)
 export const storage = getStorage(app)
-
-export let analytics: Analytics | undefined
-if (typeof window !== 'undefined' && import.meta.env.MODE === 'production') {
-  isSupported().then((ok) => {
-    if (ok) analytics = getAnalytics(app)
-  })
-}
 
 const provider = new GoogleAuthProvider()
 provider.setCustomParameters({ prompt: 'select_account' })
