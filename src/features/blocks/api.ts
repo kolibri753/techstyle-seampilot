@@ -66,3 +66,13 @@ export async function uploadToStorage(path: string, file: File) {
   await uploadBytes(r, file)
   return getDownloadURL(r)
 }
+
+export async function setBlockOrder(
+  wsId: string,
+  sid: string,
+  bid: string,
+  order: number,
+  uid?: string,
+) {
+  await updateBlock(wsId, sid, bid, { order }, uid)
+}

@@ -1,5 +1,15 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+
 import { env } from '@/lib/env'
 import { useSample } from '@/features/samples/hooks/useSample'
 import { useMember } from '@/routes/useMember'
@@ -7,11 +17,13 @@ import { AddBlockBar } from '@/features/blocks/components/AddBlockBar'
 import { useBlocks } from '@/features/blocks/hooks/useBlocks'
 import { EditableBlock } from '@/features/blocks/components/EditableBlock'
 import { CommentsPanel } from '@/features/comments/components/CommentsPanel'
-import { reorderBlocks, updateBlock } from '@/features/blocks/api'
+import { reorderBlocks, setBlockOrder } from '@/features/blocks/api'
 import { BoardShell as BlockShell } from '@/features/board/components/BoardShell'
 import { BoardHeader } from '@/features/board/components/BoardHeader'
 import { EmptyState } from '@/features/board/components/EmptyState'
 import { blockLabel } from '@/features/blocks/utils/labels'
+import { Sortable } from '@/features/dnd/Sortable'
+import { between } from '@/features/blocks/utils/order'
 
 // alias name matches file export
 const BoardShell = BlockShell
@@ -23,8 +35,14 @@ export function SampleBoard() {
   const { items: blocks, loading: bLoading } = useBlocks(wsId, sid)
   const canEdit = member?.role === 'editor'
 
-  const draggingId = useRef<string | null>(null)
-  const [, /*localOrder*/ setLocalOrder] = useState<string[]>([])
+  // optimistic list of ids for live resorting
+  const [ids, setIds] = useState<string[]>([])
+  useEffect(() => setIds(blocks.map((b) => b.id)), [blocks])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor),
+  )
 
   const blockOptions = useMemo(
     () => blocks.map(({ id, data }, i) => ({ id, label: blockLabel(data, i) })),
@@ -35,19 +53,23 @@ export function SampleBoard() {
   if (!sample) return <div>Sample not found.</div>
 
   const updated = sample.updatedAt?.toDate() ?? sample.createdAt?.toDate()
+  const findOrder = (bid: string) => blocks.find((b) => b.id === bid)?.data.order
 
-  const applyReorder = async (fromId: string, overId: string) => {
-    if (!canEdit || fromId === overId) return
-    const from = blocks.find((b) => b.id === fromId)
-    const over = blocks.find((b) => b.id === overId)
-    if (!from || !over) return
-    setLocalOrder((o) => (o.length === 0 ? blocks.map((b) => b.id) : o))
-    try {
-      await updateBlock(wsId, sid, fromId, { order: over.data.order })
-      await updateBlock(wsId, sid, overId, { order: from.data.order })
-      await reorderBlocks(wsId, sid)
-    } catch {
-      // no-op; snapshot will reconcile
+  const commitNewOrder = async (movedId: string) => {
+    const idx = ids.indexOf(movedId)
+    const prevId = idx > 0 ? ids[idx - 1] : undefined
+    const nextId = idx < ids.length - 1 ? ids[idx + 1] : undefined
+    const newOrder = between(
+      prevId ? findOrder(prevId) : undefined,
+      nextId ? findOrder(nextId) : undefined,
+    )
+
+    // If neighbors too tight, normalize then set explicit index-based order
+    if (newOrder == null) {
+      await reorderBlocks(wsId, sid!)
+      await setBlockOrder(wsId, sid!, movedId, idx * 1000)
+    } else {
+      await setBlockOrder(wsId, sid!, movedId, newOrder)
     }
   }
 
@@ -76,25 +98,44 @@ export function SampleBoard() {
             action={canEdit ? <AddBlockBar wsId={wsId} sid={sid} /> : null}
           />
         ) : (
-          <div className="space-y-3">
-            {blocks.map(({ id, data }) => (
-              <EditableBlock
-                key={id}
-                wsId={wsId}
-                sid={sid}
-                id={id}
-                block={data}
-                canEdit={canEdit}
-                onDragStart={(dragId) => (draggingId.current = dragId)}
-                onDropOver={(overId) => {
-                  if (draggingId.current) {
-                    void applyReorder(draggingId.current, overId)
-                    draggingId.current = null
-                  }
-                }}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragOver={({ active, over }) => {
+              if (!canEdit || !over || active.id === over.id) return
+              setIds((prev) =>
+                arrayMove(prev, prev.indexOf(String(active.id)), prev.indexOf(String(over.id))),
+              )
+            }}
+            onDragEnd={async ({ active, over }) => {
+              if (!canEdit || !over || active.id === over.id) return
+              await commitNewOrder(String(active.id))
+            }}
+          >
+            <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {ids.map((id) => {
+                  const data = blocks.find((b) => b.id === id)!.data
+                  return (
+                    <Sortable key={id} id={id} disabled={!canEdit}>
+                      {({ setNodeRef, attributes, listeners, style }) => (
+                        <EditableBlock
+                          wsId={wsId}
+                          sid={sid!}
+                          id={id}
+                          block={data}
+                          canEdit={canEdit}
+                          containerRef={setNodeRef}
+                          dndStyle={style}
+                          handleProps={{ ...attributes, ...listeners }}
+                        />
+                      )}
+                    </Sortable>
+                  )
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </BoardShell>
     </section>

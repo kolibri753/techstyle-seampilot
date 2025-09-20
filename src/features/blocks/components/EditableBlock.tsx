@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import type { Block } from '@/features/blocks/types'
 import { updateBlock, deleteBlock, reorderBlocks } from '@/features/blocks/api'
 import { env } from '@/lib/env'
@@ -11,8 +11,11 @@ type Props = {
   id: string
   block: Block
   canEdit: boolean
-  onDragStart?: (id: string) => void
-  onDropOver?: (id: string) => void
+
+  /** DnD (optional): ref for the outer card, transform style, and handle listeners/attrs */
+  containerRef?: (el: HTMLElement | null) => void
+  dndStyle?: CSSProperties
+  handleProps?: Record<string, unknown>
 }
 
 export function EditableBlock({
@@ -21,8 +24,9 @@ export function EditableBlock({
   id,
   block,
   canEdit,
-  onDragStart,
-  onDropOver,
+  containerRef,
+  dndStyle,
+  handleProps,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [localText, setLocalText] = useState(block.kind === 'text' ? block.text : '')
@@ -51,20 +55,15 @@ export function EditableBlock({
 
   return (
     <div
+      ref={containerRef}
+      style={dndStyle}
       className={[
         'relative group rounded-xl border border-slate-200 bg-white p-4 shadow-sm',
         'focus-within:ring-2 focus-within:ring-blue-500',
         editing ? 'pt-12' : '', // reserve space for the editing toolbar
       ].join(' ')}
-      draggable={canEdit && !editing}
-      onDragStart={() => !editing && onDragStart?.(id)}
-      onDragOver={(e) => {
-        if (!canEdit || editing) return
-        e.preventDefault()
-        onDropOver?.(id)
-      }}
     >
-      {/* EDITING TOOLBAR (docked, non-overlapping) */}
+      {/* EDITING TOOLBAR (docked) */}
       {canEdit && editing && (
         <div className="absolute inset-x-0 top-0 z-10 flex justify-end gap-2 rounded-t-xl border-b bg-white/85 px-2 py-2 backdrop-blur-sm">
           <button
@@ -85,13 +84,16 @@ export function EditableBlock({
       {/* VIEW TOOLBAR (floats, shows on hover) */}
       {canEdit && !editing && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-          <span
+          {/* Drag handle: gets dnd-kit listeners/attrs */}
+          <button
+            type="button"
+            {...(handleProps ?? {})}
             className="cursor-grab select-none rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-700 shadow-sm"
             title="Drag to reorder"
             aria-label="Drag to reorder"
           >
             ⇅
-          </span>
+          </button>
           <button
             className="rounded-md bg-slate-900 px-3 py-1.5 text-white shadow-sm hover:bg-slate-800"
             onClick={() => setEditing(true)}
