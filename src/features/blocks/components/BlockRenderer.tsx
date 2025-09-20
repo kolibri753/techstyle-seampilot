@@ -1,47 +1,62 @@
 import type { Block } from '@/features/blocks/types'
 
-type Props = { block: Block }
-
-export function BlockRenderer({ block }: Props) {
-  switch (block.kind) {
-    case 'text':
-      return <p className="whitespace-pre-wrap leading-relaxed">{block.text || '—'}</p>
-    case 'image':
-      return (
-        <figure className="space-y-1">
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <img src={block.url} className="max-w-full rounded border" />
-          {block.caption && (
-            <figcaption className="text-sm text-gray-600">{block.caption}</figcaption>
-          )}
-        </figure>
-      )
-    case 'audio':
-      return (
-        <div className="space-y-1">
-          <audio controls src={block.url} className="w-full" />
-          {block.note && <div className="text-sm text-gray-600">{block.note}</div>}
-        </div>
-      )
-    case 'table':
-      return (
-        <div className="overflow-x-auto">
-          <table className="border-separate border-spacing-0 w-full">
-            <tbody>
-              {block.rows?.map((row, i) => (
-                <tr key={i}>
-                  {row.map((cell, j) => (
-                    <td key={j} className="border px-2 py-1 align-top">
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )
-    default:
-      return <div className="text-sm text-gray-500">Unsupported block</div>
+export function BlockRenderer({ block }: { block: Block }) {
+  if (block.kind === 'text') {
+    return (
+      <div className="whitespace-pre-wrap break-words leading-7 text-[15px] text-slate-800">
+        {block.text || <span className="italic text-slate-500">Empty text</span>}
+      </div>
+    )
   }
+
+  if (block.kind === 'image') {
+    return (
+      <figure className="space-y-2">
+        <img
+          src={(block as any).url}
+          alt={block.caption ?? ''}
+          className="rounded-md border bg-slate-50 max-h-[480px] w-full object-contain"
+        />
+        {block.caption && (
+          <figcaption className="text-sm text-slate-600">{block.caption}</figcaption>
+        )}
+      </figure>
+    )
+  }
+
+  if (block.kind === 'audio') {
+    const url = (block as any).url
+    return (
+      <div className="space-y-2">
+        {url ? (
+          <audio controls src={url} className="w-full" />
+        ) : (
+          <div className="text-slate-500">No audio uploaded</div>
+        )}
+        {block.note && <div className="text-sm text-slate-600">{block.note}</div>}
+      </div>
+    )
+  }
+
+  if (block.kind === 'table') {
+    return (
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <tbody>
+            {(block.rows ?? []).map((row, i) => (
+              <tr key={i}>
+                {row.map((cell, j) => (
+                  <td key={j} className="border border-slate-300 px-3 py-2 text-slate-800">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  return <div className="text-slate-500">Unsupported block</div>
 }

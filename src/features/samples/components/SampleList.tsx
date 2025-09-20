@@ -30,7 +30,7 @@ export function SampleList({ wsId, items, onDeleted }: Props) {
             <div className="flex items-center justify-between gap-3">
               <Link to={`/w/${wsId}/s/${id}`} className="flex-1">
                 <div className="font-medium">{data.title || '(untitled)'}</div>
-                <div className="text-sm opacity-70">
+                <div className="text-sm">
                   Status: {data.status} · v{data.version} · Updated: {fmtDateTime(updated)}
                 </div>
               </Link>

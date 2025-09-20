@@ -1,14 +1,20 @@
 import { useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { env } from '@/lib/env'
 import { useSample } from '@/features/samples/hooks/useSample'
-import { fmtDateTime } from '@/lib/date'
 import { useMember } from '@/routes/useMember'
 import { AddBlockBar } from '@/features/blocks/components/AddBlockBar'
 import { useBlocks } from '@/features/blocks/hooks/useBlocks'
 import { EditableBlock } from '@/features/blocks/components/EditableBlock'
 import { CommentsPanel } from '@/features/comments/components/CommentsPanel'
 import { reorderBlocks, updateBlock } from '@/features/blocks/api'
+import { BoardShell as BlockShell } from '@/features/board/components/BoardShell'
+import { BoardHeader } from '@/features/board/components/BoardHeader'
+import { EmptyState } from '@/features/board/components/EmptyState'
+import { blockLabel } from '@/features/blocks/utils/labels'
+
+// alias name matches file export
+const BoardShell = BlockShell
 
 export function SampleBoard() {
   const { wsId = env.DEFAULT_WS_ID, sid } = useParams()
@@ -17,24 +23,11 @@ export function SampleBoard() {
   const { items: blocks, loading: bLoading } = useBlocks(wsId, sid)
   const canEdit = member?.role === 'editor'
 
-  // drag state (very light)
   const draggingId = useRef<string | null>(null)
-  const [localOrder, setLocalOrder] = useState<string[]>([])
+  const [, /*localOrder*/ setLocalOrder] = useState<string[]>([])
 
-  // compute labels for comment dropdown
   const blockOptions = useMemo(
-    () =>
-      blocks.map(({ id, data }, i) => ({
-        id,
-        label:
-          data.kind === 'text'
-            ? `Text #${i + 1}`
-            : data.kind === 'image'
-              ? `Image #${i + 1}`
-              : data.kind === 'audio'
-                ? `Audio #${i + 1}`
-                : `Table #${i + 1}`,
-      })),
+    () => blocks.map(({ id, data }, i) => ({ id, label: blockLabel(data, i) })),
     [blocks],
   )
 
@@ -45,53 +38,46 @@ export function SampleBoard() {
 
   const applyReorder = async (fromId: string, overId: string) => {
     if (!canEdit || fromId === overId) return
-    // optimistic reorder by swapping 'order' values
     const from = blocks.find((b) => b.id === fromId)
     const over = blocks.find((b) => b.id === overId)
     if (!from || !over) return
-    setLocalOrder((o) => {
-      if (o.length === 0) return blocks.map((b) => b.id)
-      return o
-    })
+    setLocalOrder((o) => (o.length === 0 ? blocks.map((b) => b.id) : o))
     try {
       await updateBlock(wsId, sid, fromId, { order: over.data.order })
       await updateBlock(wsId, sid, overId, { order: from.data.order })
       await reorderBlocks(wsId, sid)
     } catch {
-      // ignore; server snapshot will recover
+      // no-op; snapshot will reconcile
     }
   }
 
-  const visibleBlocks = blocks // server-ordered; localOrder could be used for finer UX if needed
-
   return (
-    <section className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm">
-            <Link className="underline" to={`/w/${wsId}${canEdit ? '/editor' : ''}`}>
-              ← Back
-            </Link>
-          </div>
-          <h2 className="text-xl font-semibold">{sample.title || '(untitled)'}</h2>
-          <p className="text-sm text-gray-600">
-            Status: {sample.status} · v{sample.version} · Updated: {fmtDateTime(updated)}
-          </p>
-        </div>
-        {canEdit && sid && <AddBlockBar wsId={wsId} sid={sid} />}
-      </div>
+    <section className="space-y-6">
+      <BoardHeader
+        backTo={`/w/${wsId}${canEdit ? '/editor' : ''}`}
+        title={sample.title}
+        status={sample.status}
+        version={sample.version}
+        updated={updated}
+        right={canEdit && sid ? <AddBlockBar wsId={wsId} sid={sid} /> : null}
+      />
 
-      {/* Content + Comments */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-4">
-        {/* Canvas */}
-        <div className="space-y-3">
-          {bLoading ? (
-            <div>Loading content…</div>
-          ) : visibleBlocks.length === 0 ? (
-            <div className="rounded border p-4 text-gray-600">No content yet.</div>
-          ) : (
-            visibleBlocks.map(({ id, data }) => (
+      <BoardShell sidebar={<CommentsPanel wsId={wsId} sid={sid} blocks={blockOptions} />}>
+        {bLoading ? (
+          <div className="rounded-lg border border-slate-200 bg-white p-4">Loading content…</div>
+        ) : blocks.length === 0 ? (
+          <EmptyState
+            title="No content yet"
+            hint={
+              canEdit
+                ? 'Add text, images, voice notes, or a table.'
+                : 'The editor has not added content yet.'
+            }
+            action={canEdit ? <AddBlockBar wsId={wsId} sid={sid} /> : null}
+          />
+        ) : (
+          <div className="space-y-3">
+            {blocks.map(({ id, data }) => (
               <EditableBlock
                 key={id}
                 wsId={wsId}
@@ -107,13 +93,10 @@ export function SampleBoard() {
                   }
                 }}
               />
-            ))
-          )}
-        </div>
-
-        {/* Comments */}
-        <CommentsPanel wsId={wsId} sid={sid} blocks={blockOptions} />
-      </div>
+            ))}
+          </div>
+        )}
+      </BoardShell>
     </section>
   )
 }
