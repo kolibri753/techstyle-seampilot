@@ -9,6 +9,8 @@ import {
   signOut,
   browserLocalPersistence,
   type User,
+  signInWithEmailAndPassword, // NEW
+  sendPasswordResetEmail, // NEW
 } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
@@ -44,15 +46,16 @@ const provider = new GoogleAuthProvider()
 provider.setCustomParameters({ prompt: 'select_account' })
 
 export const listenAuth = (cb: (u: User | null) => void) => onAuthStateChanged(auth, cb)
-export const signInAnon = () => signInAnonymously(auth)
+export const signInAnon = () => signInAnonymously(auth) // kept if you want later
 export const signInWithGoogle = () => signInWithPopup(auth, provider)
+export const signOutUser = () => signOut(auth)
 
 export const upgradeAnonymousWithGoogle = async () => {
   const u = auth.currentUser
   if (u?.isAnonymous) {
     try {
       await linkWithPopup(u, provider)
-    } catch (e: unknown) {
+    } catch {
       await signInWithPopup(auth, provider)
     }
   } else {
@@ -60,4 +63,8 @@ export const upgradeAnonymousWithGoogle = async () => {
   }
 }
 
-export const signOutUser = () => signOut(auth)
+// EMAIL/PASSWORD helpers (used by Login)
+export const signInWithEmailPass = (email: string, pass: string) =>
+  signInWithEmailAndPassword(auth, email, pass)
+
+export const resetPassword = (email: string) => sendPasswordResetEmail(auth, email)

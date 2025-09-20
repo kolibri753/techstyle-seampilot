@@ -12,4 +12,7 @@ export const env = {
   MSG_SENDER_ID: requireEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
   APP_ID: requireEnv('VITE_FIREBASE_APP_ID'),
   MEASUREMENT_ID: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+
+  DEFAULT_WS_ID: requireEnv('VITE_DEFAULT_WS_ID'),
+  LOCAL_LOGIN_DOMAIN: import.meta.env.VITE_LOCAL_LOGIN_DOMAIN ?? '4fit.local',
 }
