@@ -3,7 +3,7 @@ import type { Block } from '@/features/blocks/types'
 export function BlockRenderer({ block }: { block: Block }) {
   if (block.kind === 'text') {
     return (
-      <div className="whitespace-pre-wrap break-words leading-7 text-[15px] text-slate-800">
+      <div className="whitespace-pre-wrap break-words leading-7 text-[15px] text-slate-800 dark:text-slate-100">
         {block.text || <span className="italic text-slate-500">Empty text</span>}
       </div>
     )
@@ -15,11 +15,9 @@ export function BlockRenderer({ block }: { block: Block }) {
         <img
           src={(block as any).url}
           alt={block.caption ?? ''}
-          className="rounded-md border bg-slate-50 max-h-[480px] w-full object-contain"
+          className="rounded-md border border-app bg-surface max-h-[480px] w-full object-contain"
         />
-        {block.caption && (
-          <figcaption className="text-sm text-slate-600">{block.caption}</figcaption>
-        )}
+        {block.caption && <figcaption className="text-sm">{block.caption}</figcaption>}
       </figure>
     )
   }
@@ -31,9 +29,9 @@ export function BlockRenderer({ block }: { block: Block }) {
         {url ? (
           <audio controls src={url} className="w-full" />
         ) : (
-          <div className="text-slate-500">No audio uploaded</div>
+          <div className="text-slate-500 dark:text-slate-400">No audio uploaded</div>
         )}
-        {block.note && <div className="text-sm text-slate-600">{block.note}</div>}
+        {block.note && <div className="text-sm">{block.note}</div>}
       </div>
     )
   }
@@ -46,7 +44,10 @@ export function BlockRenderer({ block }: { block: Block }) {
             {(block.rows ?? []).map((row, i) => (
               <tr key={i}>
                 {row.map((cell, j) => (
-                  <td key={j} className="border border-slate-300 px-3 py-2 text-slate-800">
+                  <td
+                    key={j}
+                    className="border border-slate-300 dark:border-slate-700 px-3 py-2 text-slate-800 dark:text-slate-100"
+                  >
                     {cell}
                   </td>
                 ))}

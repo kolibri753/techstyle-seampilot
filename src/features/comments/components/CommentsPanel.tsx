@@ -37,7 +37,7 @@ export function CommentsPanel({ wsId, sid, blocks = [], onJumpToBlock }: Props) 
 
   return (
     <div className="h-full">
-      <h3 className="font-semibold text-slate-900 mb-3">Comments</h3>
+      <h3 className="font-semibold mb-3">Comments</h3>
 
       <form onSubmit={onSend} className="space-y-2 mb-4">
         {blocks.length > 0 && (
@@ -73,7 +73,7 @@ export function CommentsPanel({ wsId, sid, blocks = [], onJumpToBlock }: Props) 
         {items.map(({ id, data }) => {
           const label = data.blockId ? labelById.get(data.blockId) : undefined
           return (
-            <li key={id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <li key={id} className="rounded-lg border border-app bg-surface p-3">
               <div className="text-xs text-slate-700 mb-1 flex items-center gap-2">
                 <span>{data.displayName || data.createdBy}</span>
                 {data.blockId ? (
@@ -104,7 +104,7 @@ export function CommentsPanel({ wsId, sid, blocks = [], onJumpToBlock }: Props) 
           )
         })}
         {items.length === 0 && (
-          <p className="text-sm text-slate-700">No comments yet. Be the first to leave one.</p>
+          <p className="text-sm">No comments yet. Be the first to leave one.</p>
         )}
       </ul>
     </div>

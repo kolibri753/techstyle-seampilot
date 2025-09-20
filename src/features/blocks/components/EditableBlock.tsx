@@ -65,7 +65,7 @@ export function EditableBlock({
       ref={containerRef}
       style={dndStyle}
       className={[
-        'relative group rounded-xl border border-slate-200 bg-white p-4 shadow-sm',
+        'relative group rounded-xl border border-app bg-surface p-4 shadow-sm',
         'focus-within:ring-2 focus-within:ring-blue-500',
         highlighted ? 'ring-2 ring-amber-400' : '',
         editing ? 'pt-12' : '',
@@ -152,7 +152,7 @@ export function EditableBlock({
           placeholder="Note…"
         />
       )}
-      
+
       {editing && block.kind === 'table' && (
         <div className="space-y-2">
           <div className="text-sm text-slate-700">Click a cell to edit</div>

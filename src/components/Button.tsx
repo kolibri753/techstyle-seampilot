@@ -8,7 +8,7 @@ type Props = PropsWithChildren<
 >
 
 const base =
-  'inline-flex items-center justify-center rounded-md border font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-900/20 disabled:opacity-50 disabled:pointer-events-none'
+  'inline-flex items-center justify-center rounded-md border font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-900/20 dark:focus-visible:outline-white/20 disabled:opacity-50 disabled:pointer-events-none'
 
 const sizes: Record<Size, string> = {
   sm: 'px-2 py-1 text-sm',
@@ -16,10 +16,14 @@ const sizes: Record<Size, string> = {
 }
 
 const variants: Record<Variant, string> = {
-  ghost: 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50',
-  outline: 'border-slate-300 bg-transparent text-slate-800 hover:bg-slate-50',
-  primary: 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800',
-  danger: 'border-red-300 bg-white text-red-700 hover:bg-red-50',
+  ghost:
+    'border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800',
+  outline:
+    'border-slate-300 bg-transparent text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800/60',
+  primary:
+    'border-slate-900 bg-slate-900 text-white hover:bg-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700',
+  danger:
+    'border-red-300 bg-white text-red-700 hover:bg-red-50 dark:border-red-600/40 dark:bg-slate-900 dark:text-red-300 dark:hover:bg-slate-800',
 }
 
 export function Button({ variant = 'ghost', size = 'sm', className = '', ...p }: Props) {

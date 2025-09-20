@@ -119,7 +119,7 @@ export function SampleBoard() {
         }
       >
         {bLoading ? (
-          <div className="rounded-lg border border-slate-200 bg-white p-4">Loading content…</div>
+          <div className="rounded-lg border border-app bg-surface p-4">Loading content…</div>
         ) : blocks.length === 0 ? (
           <EmptyState
             title="No content yet"
