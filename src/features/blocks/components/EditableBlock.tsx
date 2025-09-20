@@ -12,10 +12,14 @@ type Props = {
   block: Block
   canEdit: boolean
 
-  /** DnD (optional): ref for the outer card, transform style, and handle listeners/attrs */
+  /** DnD (optional) */
   containerRef?: (el: HTMLElement | null) => void
   dndStyle?: CSSProperties
   handleProps?: Record<string, unknown>
+
+  /** Anchoring & UX */
+  domId?: string
+  highlighted?: boolean
 }
 
 export function EditableBlock({
@@ -27,6 +31,8 @@ export function EditableBlock({
   containerRef,
   dndStyle,
   handleProps,
+  domId,
+  highlighted,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [localText, setLocalText] = useState(block.kind === 'text' ? block.text : '')
@@ -55,15 +61,17 @@ export function EditableBlock({
 
   return (
     <div
+      id={domId}
       ref={containerRef}
       style={dndStyle}
       className={[
         'relative group rounded-xl border border-slate-200 bg-white p-4 shadow-sm',
         'focus-within:ring-2 focus-within:ring-blue-500',
-        editing ? 'pt-12' : '', // reserve space for the editing toolbar
+        highlighted ? 'ring-2 ring-amber-400' : '',
+        editing ? 'pt-12' : '',
       ].join(' ')}
     >
-      {/* EDITING TOOLBAR (docked) */}
+      {/* EDITING TOOLBAR */}
       {canEdit && editing && (
         <div className="absolute inset-x-0 top-0 z-10 flex justify-end gap-2 rounded-t-xl border-b bg-white/85 px-2 py-2 backdrop-blur-sm">
           <button
@@ -81,10 +89,9 @@ export function EditableBlock({
         </div>
       )}
 
-      {/* VIEW TOOLBAR (floats, shows on hover) */}
+      {/* VIEW TOOLBAR */}
       {canEdit && !editing && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-          {/* Drag handle: gets dnd-kit listeners/attrs */}
           <button
             type="button"
             {...(handleProps ?? {})}
@@ -128,7 +135,6 @@ export function EditableBlock({
           placeholder="Write text…"
         />
       )}
-
       {editing && block.kind === 'image' && (
         <input
           className="w-full rounded-lg border border-slate-300 p-2 text-slate-900"
@@ -146,7 +152,7 @@ export function EditableBlock({
           placeholder="Note…"
         />
       )}
-
+      
       {editing && block.kind === 'table' && (
         <div className="space-y-2">
           <div className="text-sm text-slate-700">Click a cell to edit</div>

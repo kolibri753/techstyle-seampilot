@@ -1,16 +1,27 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useComments } from '@/features/comments/hooks/useComments'
 import { addComment } from '@/features/comments/api'
 import { auth } from '@/lib/firebase'
 
 type BlockOption = { id: string; label: string }
-type Props = { wsId: string; sid: string; blocks?: BlockOption[] }
+type Props = {
+  wsId: string
+  sid: string
+  blocks?: BlockOption[]
+  onJumpToBlock?: (id: string) => void
+}
 
-export function CommentsPanel({ wsId, sid, blocks = [] }: Props) {
+export function CommentsPanel({ wsId, sid, blocks = [], onJumpToBlock }: Props) {
   const { items } = useComments(wsId, sid)
   const [text, setText] = useState('')
   const [blockId, setBlockId] = useState<string>('')
   const uid = auth.currentUser?.uid
+
+  const labelById = useMemo(() => {
+    const m = new Map<string, string>()
+    blocks.forEach((b) => m.set(b.id, b.label))
+    return m
+  }, [blocks])
 
   const onSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,15 +70,39 @@ export function CommentsPanel({ wsId, sid, blocks = [] }: Props) {
       </form>
 
       <ul className="space-y-3">
-        {items.map(({ id, data }) => (
-          <li key={id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div className="text-xs text-slate-700 mb-1">
-              {data.displayName || data.createdBy}
-              {data.blockId && <span className="ml-2 italic text-slate-600">(on block)</span>}
-            </div>
-            <div className="text-sm text-slate-900 whitespace-pre-wrap">{data.text}</div>
-          </li>
-        ))}
+        {items.map(({ id, data }) => {
+          const label = data.blockId ? labelById.get(data.blockId) : undefined
+          return (
+            <li key={id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="text-xs text-slate-700 mb-1 flex items-center gap-2">
+                <span>{data.displayName || data.createdBy}</span>
+                {data.blockId ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] leading-none">
+                    <em className="text-slate-500">on</em>
+                    <a
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onJumpToBlock?.(data.blockId!)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          onJumpToBlock?.(data.blockId!)
+                        }
+                      }}
+                      title="Scroll to block"
+                      className="underline text-slate-700 hover:text-slate-900 cursor-pointer"
+                    >
+                      {label ?? 'Block'}
+                    </a>
+                  </span>
+                ) : (
+                  <span className="italic text-slate-500 text-[10px] leading-none">general</span>
+                )}
+              </div>
+              <div className="text-sm text-slate-900 whitespace-pre-wrap">{data.text}</div>
+            </li>
+          )
+        })}
         {items.length === 0 && (
           <p className="text-sm text-slate-700">No comments yet. Be the first to leave one.</p>
         )}

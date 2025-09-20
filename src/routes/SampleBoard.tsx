@@ -39,6 +39,17 @@ export function SampleBoard() {
   const [ids, setIds] = useState<string[]>([])
   useEffect(() => setIds(blocks.map((b) => b.id)), [blocks])
 
+  // transient highlight
+  const [focusId, setFocusId] = useState<string | null>(null)
+  const jumpToBlock = (bid: string) => {
+    const el = document.getElementById(`block-${bid}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setFocusId(bid)
+      window.setTimeout(() => setFocusId((cur) => (cur === bid ? null : cur)), 1600)
+    }
+  }
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor),
@@ -64,7 +75,6 @@ export function SampleBoard() {
       nextId ? findOrder(nextId) : undefined,
     )
 
-    // If neighbors too tight, normalize then set explicit index-based order
     if (newOrder == null) {
       await reorderBlocks(wsId, sid!)
       await setBlockOrder(wsId, sid!, movedId, idx * 1000)
@@ -84,7 +94,11 @@ export function SampleBoard() {
         right={canEdit && sid ? <AddBlockBar wsId={wsId} sid={sid} /> : null}
       />
 
-      <BoardShell sidebar={<CommentsPanel wsId={wsId} sid={sid} blocks={blockOptions} />}>
+      <BoardShell
+        sidebar={
+          <CommentsPanel wsId={wsId} sid={sid} blocks={blockOptions} onJumpToBlock={jumpToBlock} />
+        }
+      >
         {bLoading ? (
           <div className="rounded-lg border border-slate-200 bg-white p-4">Loading content…</div>
         ) : blocks.length === 0 ? (
@@ -128,6 +142,8 @@ export function SampleBoard() {
                           containerRef={setNodeRef}
                           dndStyle={style}
                           handleProps={{ ...attributes, ...listeners }}
+                          domId={`block-${id}`}
+                          highlighted={focusId === id}
                         />
                       )}
                     </Sortable>
