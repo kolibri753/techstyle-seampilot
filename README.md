@@ -32,3 +32,39 @@
 - **відмінність 4FIT:** вузьке швейне призначення, простота, миттєва користь, можливість друку.
 
 ---
+
+## 4. C4 Level 1: System Context
+
+```mermaid
+flowchart LR
+  %% People
+  P1([Editor / Technologist]):::person
+  P2([Operator / Seamstress]):::person
+
+  %% System of interest (black box)
+  S[4FIT Web App]:::system
+
+  %% External software systems & data stores
+  AUTH[Firebase Auth / IdP]:::ext
+  DB[(Firestore Database)]:::data
+  STORE[(Object Storage for Media)]:::data
+  CDN[Edge CDN / Hosting]:::ext
+  PDFW[PDF Rendering Worker]:::ext
+  ANALYTICS[Analytics / RUM]:::ext
+  NOTIFY[Notifications / FCM]:::ext
+
+  %% Interactions
+  P1 -->|create & edit instructions| S
+  P2 -->|view & execute steps| S
+
+  S -->|authenticate users| AUTH
+  S -->|store & query docs| DB
+  S -->|upload / fetch media| STORE
+  S -->|serve static assets via| CDN
+  S -->|request PDF generation| PDFW
+  S -->|collect usage metrics| ANALYTICS
+  S -->|send push notifications| NOTIFY
+```
+
+---
+
